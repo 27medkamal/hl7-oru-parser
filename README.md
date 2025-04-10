@@ -1,5 +1,9 @@
 # Everlab
 
+## TODO:
+
+- [ ] polish this file
+
 ## Data Diagnosis:
 
 ### Queries run
@@ -10,6 +14,8 @@ SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike
 ```
 
 ### Analysis/Assumptions
+
+#### DB
 
 - `Total Serum IgA` is found as a duplicate. All fields are the same. Except `diagnostic` and `diagnostic_groups`, therefore need to give priority to metrics that have a `diagnostic` and `diagnostic_groups` field
 - All units in `oru_sonic_units` for each metric are equivalent to `units`
@@ -35,47 +41,19 @@ SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike
 - assuming `group`, `diagnostic` and `condition` have unique names across the board
 - min_age of 0 and max_age of 200 means they were not specified
 - Not all metrics have a `condition` associated with them.
+- Although the instructions specify that you should match on metric age range, gender oru_sonic_units and oru_sonic_codes, there only exists one metric with a `condition` associated with it.
 
-### DB Graph
+##### DB Graph
 
 ![DB Graph](prisma/db-graph.png)
 
-## Features
+### ORU Format
 
-- 🧙‍♂️ E2E typesafety with [tRPC](https://trpc.io)
-- ⚡ Full-stack React with Next.js
-- ⚡ Database with Prisma
-- ⚙️ VSCode extensions
-- 🎨 ESLint + Prettier
-- 💚 CI setup using GitHub Actions:
-  - ✅ E2E testing with [Playwright](https://playwright.dev/)
-  - ✅ Linting
-- 🔐 Validates your env vars on build and start
-
-## Setup
-
-```bash
-pnpm create next-app --example https://github.com/trpc/trpc --example-path examples/next-prisma-starter trpc-prisma-starter
-cd trpc-prisma-starter
-pnpm
-pnpm dx
-```
-
-### Requirements
-
-- Node >= 18.0.0
-- Postgres
-
-## Development
-
-### Start project
-
-```bash
-pnpm create next-app --example https://github.com/trpc/trpc --example-path examples/next-prisma-starter trpc-prisma-starter
-cd trpc-prisma-starter
-pnpm
-pnpm dx
-```
+- The hl7 version used is 2.3 as can be seen inside the file
+- Used the corresponding dictionary for the version from https://github.com/fernandojsg/hl7-dictionary
+- To handle the oru file properly in a production settings, a lot more will have to be done:
+  - Handling different versions
+  - Reading different value types
 
 ### Commands
 
@@ -89,40 +67,3 @@ pnpm test-start # runs e2e + unit tests
 pnpm test-unit  # runs normal Vitest unit tests
 pnpm test-e2e   # runs e2e tests
 ```
-
-## Deployment
-
-### Using [Render](https://render.com/)
-
-The project contains a [`render.yaml`](./render.yaml) [_"Blueprint"_](https://render.com/docs/blueprint-spec) which makes the project easily deployable on [Render](https://render.com/).
-
-Go to [dashboard.render.com/blueprints](https://dashboard.render.com/blueprints) and connect to this Blueprint and see how the app and database automatically gets deployed.
-
-## Files of note
-
-<table>
-  <thead>
-    <tr>
-      <th>Path</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><a href="./prisma/schema.prisma"><code>./prisma/schema.prisma</code></a></td>
-      <td>Prisma schema</td>
-    </tr>
-    <tr>
-      <td><a href="./src/pages/api/trpc/[trpc].ts"><code>./src/pages/api/trpc/[trpc].ts</code></a></td>
-      <td>tRPC response handler</td>
-    </tr>
-    <tr>
-      <td><a href="./src/server/routers"><code>./src/server/routers</code></a></td>
-      <td>Your app's different tRPC-routers</td>
-    </tr>
-  </tbody>
-</table>
-
----
-
-Created by [@alexdotjs](https://twitter.com/alexdotjs).
