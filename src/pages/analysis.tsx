@@ -5,17 +5,63 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 
 import { useAnalysis } from '~/lib/contexts';
 import _ from 'lodash';
+import { cn } from '~/lib/utils';
+
+// TODO: highlight at risk groups and dignostics
+// add a toggle button that filters the table to show only at risk groups, diagnostics and metrics
+// add a button for expand and collapse all
 
 type TreeNode = {
   key: string;
   data: {
     name: string;
-    value: string | number;
-    unit: string;
+    value: string;
+    unit: string; // TODO: get all units
     standardRange: string;
-    status: string;
+    everlabRange: string;
+    standardAtRisk: {
+      text: string;
+      classification: 'Yes' | 'No' | 'Possible' | '';
+    };
+    everlabAtRisk: {
+      text: string;
+      classification: 'Yes' | 'No' | 'Possible' | '';
+    };
   };
   children?: TreeNode[];
+};
+
+const formatRange = (lowerLimit: number | null, higherLimit: number | null) => {
+  if (!lowerLimit && higherLimit) return `< ${higherLimit}`;
+  if (lowerLimit && !higherLimit) return `> ${lowerLimit}`;
+  if (lowerLimit && higherLimit) return `${lowerLimit} - ${higherLimit}`;
+  return '';
+};
+
+const formatAtRisk = (
+  atRisk: 'Yes' | 'No' | 'Possible',
+  conditionName: string | null,
+): {
+  text: string;
+  classification: 'Yes' | 'No' | 'Possible' | '';
+} => {
+  if (atRisk === 'Yes') {
+    return {
+      text: conditionName ? conditionName : 'At risk',
+      classification: 'Yes',
+    };
+  } else if (atRisk === 'No') {
+    return { text: 'No risk', classification: 'No' };
+  } else if (atRisk === 'Possible') {
+    return {
+      text: conditionName
+        ? `Possible risk for ${conditionName}`
+        : 'Possible risk',
+      classification: 'Possible',
+    };
+  } else {
+    return { text: '', classification: '' };
+  }
 };
 
 export default function Analysis() {
@@ -24,6 +70,7 @@ export default function Analysis() {
   if (!analysis)
     return <div className="text-center">Error. No analysis found</div>;
 
+  // TODO: coordinate with backend to get the correct data structure
   const treeData: TreeNode[] = _.map(analysis.data, (groups, groupName) => ({
     key: groupName,
     data: {
@@ -31,7 +78,9 @@ export default function Analysis() {
       value: '',
       unit: '',
       standardRange: '',
-      status: '',
+      everlabRange: '',
+      standardAtRisk: { text: '', classification: '' },
+      everlabAtRisk: { text: '', classification: '' },
     },
     children: _.map(groups, (metrics, diagnosticName) => ({
       key: diagnosticName,
@@ -40,7 +89,9 @@ export default function Analysis() {
         value: '',
         unit: '',
         standardRange: '',
-        status: '',
+        everlabRange: '',
+        standardAtRisk: { text: '', classification: '' },
+        everlabAtRisk: { text: '', classification: '' },
       },
       children: metrics.map((metric) => ({
         key: metric.metricName,
@@ -48,12 +99,22 @@ export default function Analysis() {
           name: metric.metricName,
           value: metric.resultValue,
           unit: metric.metricUnit,
-          standardRange:
-            metric.metricStandardLower !== null &&
-            metric.metricStandardHigher !== null
-              ? `${metric.metricStandardLower} - ${metric.metricStandardHigher}`
-              : 'N/A',
-          status: metric.everlabAtRisk,
+          standardRange: formatRange(
+            metric.metricStandardLower,
+            metric.metricStandardHigher,
+          ),
+          everlabRange: formatRange(
+            metric.metricEverlabLower,
+            metric.metricEverlabHigher,
+          ),
+          standardAtRisk: formatAtRisk(
+            metric.standardAtRisk,
+            metric.conditionName,
+          ),
+          everlabAtRisk: formatAtRisk(
+            metric.everlabAtRisk,
+            metric.conditionName,
+          ),
         },
       })),
     })),
@@ -100,31 +161,92 @@ export default function Analysis() {
           <CardTitle>Analysis Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <TreeTable value={treeData} className="w-full">
-            <Column field="name" header="Name" expander />
-            <Column field="value" header="Value" />
-            <Column field="units" header="Units" />
-            <Column field="standardRange" header="Standard Range" />
+          <TreeTable
+            value={treeData}
+            className="w-full"
+            tableStyle={{ tableLayout: 'auto' }}
+          >
             <Column
-              field="status"
-              header="Risk Status"
-              body={(node) => {
-                const status = node.data.status;
-                if (!status) return null;
-
-                let statusClass = '';
-                if (status === 'Yes') statusClass = 'bg-red-100 text-red-800';
-                else if (status === 'No')
-                  statusClass = 'bg-green-100 text-green-800';
-                else if (status === 'Possible')
-                  statusClass = 'bg-yellow-100 text-yellow-800';
+              field="name"
+              header="Name"
+              expander
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+            />
+            <Column
+              field="value"
+              header="Value"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+            />
+            <Column
+              field="unit"
+              header="Unit"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+            />
+            <Column
+              field="standardRange"
+              header="Standard Range"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+            />
+            <Column
+              field="everlabRange"
+              header="Everlab Range"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+            />
+            <Column
+              header="Standard risk"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+              body={(node: TreeNode) => {
+                const atRisk = node.data.standardAtRisk;
 
                 return (
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${statusClass}`}
-                  >
-                    {status}
-                  </span>
+                  atRisk && (
+                    <span
+                      className={cn(
+                        `px-2 py-1 rounded-full text-xs`,
+                        {
+                          Yes: 'bg-red-100 text-red-800',
+                          No: 'bg-green-100 text-green-800',
+                          Possible: 'bg-yellow-100 text-yellow-800',
+                          '': '',
+                        }[atRisk.classification],
+                      )}
+                    >
+                      {atRisk.text}
+                    </span>
+                  )
+                );
+              }}
+            />
+
+            <Column
+              header="Everlab risk"
+              bodyClassName="border border-gray-200"
+              headerClassName="border border-gray-200 bg-gray-50"
+              body={(node: TreeNode) => {
+                const atRisk = node.data.everlabAtRisk;
+
+                return (
+                  atRisk && (
+                    <span
+                      className={cn(
+                        `px-2 py-1 rounded-full text-xs`,
+                        {
+                          Yes: 'bg-red-100 text-red-800',
+                          No: 'bg-green-100 text-green-800',
+                          Possible: 'bg-yellow-100 text-yellow-800',
+                          '': '',
+                        }[atRisk.classification],
+                      )}
+                    >
+                      {atRisk.text}
+                    </span>
+                  )
                 );
               }}
             />
