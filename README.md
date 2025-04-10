@@ -1,5 +1,13 @@
 # Everlab
 
+## Instructions:
+
+```sh
+docker-compose up -d
+pnpm install
+pnpm dev
+```
+
 ## TODO:
 
 - [ ] Polish this file
