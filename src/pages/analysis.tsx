@@ -1,22 +1,20 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { TreeTable } from 'primereact/treetable';
 import { Column } from 'primereact/column';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-
+import { Button } from '~/components/ui/button';
+import { Switch } from '~/components/ui/switch';
+import { Label } from '~/components/ui/label';
 import { useAnalysis } from '~/lib/contexts';
 import _ from 'lodash';
 import { cn } from '~/lib/utils';
-
-// TODO: highlight at risk groups and dignostics
-// add a toggle button that filters the table to show only at risk groups, diagnostics and metrics
-// add a button for expand and collapse all
 
 type TreeNode = {
   key: string;
   data: {
     name: string;
     value: string;
-    unit: string; // TODO: get all units
+    units: string;
     standardRange: string;
     everlabRange: string;
     standardAtRisk: {
@@ -64,8 +62,25 @@ const formatAtRisk = (
   }
 };
 
+const isAtRisk = (node: TreeNode): boolean =>
+  node.data.standardAtRisk.classification === 'Yes' ||
+  node.data.everlabAtRisk.classification === 'Yes' ||
+  node.data.standardAtRisk.classification === 'Possible' ||
+  node.data.everlabAtRisk.classification === 'Possible' ||
+  node.children?.some((child) => isAtRisk(child)) ||
+  false;
+
+const filterAtRiskNodes = (nodes: TreeNode[]): TreeNode[] =>
+  nodes.filter(isAtRisk).map((node) => ({
+    ...node,
+    children: node.children ? filterAtRiskNodes(node.children) : undefined,
+  }));
+
 export default function Analysis() {
   const { analysis } = useAnalysis();
+  const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
+  const [expandedKeys, setExpandedKeys] = useState({});
+  const treeTableRef = useRef(null);
 
   if (!analysis)
     return <div className="text-center">Error. No analysis found</div>;
@@ -76,7 +91,7 @@ export default function Analysis() {
     data: {
       name: groupName,
       value: '',
-      unit: '',
+      units: '',
       standardRange: '',
       everlabRange: '',
       standardAtRisk: { text: '', classification: '' },
@@ -87,7 +102,7 @@ export default function Analysis() {
       data: {
         name: diagnosticName,
         value: '',
-        unit: '',
+        units: '',
         standardRange: '',
         everlabRange: '',
         standardAtRisk: { text: '', classification: '' },
@@ -98,7 +113,7 @@ export default function Analysis() {
         data: {
           name: metric.metricName,
           value: metric.resultValue,
-          unit: metric.metricUnit,
+          units: metric.metricUnits,
           standardRange: formatRange(
             metric.metricStandardLower,
             metric.metricStandardHigher,
@@ -119,6 +134,24 @@ export default function Analysis() {
       })),
     })),
   }));
+
+  const displayData = showOnlyAtRisk ? filterAtRiskNodes(treeData) : treeData;
+
+  const expandAll = () => {
+    const getAllKeys = (nodes: TreeNode[]) =>
+      nodes.flatMap((node): string[] => [
+        node.key,
+        ...(node.children ? getAllKeys(node.children) : []),
+      ]);
+
+    _.chain(displayData)
+      .thru(getAllKeys)
+      .reduce((acc, key) => ({ ...acc, [key]: true }), {})
+      .thru(setExpandedKeys)
+      .value();
+  };
+
+  const collapseAll = () => setExpandedKeys({});
 
   return (
     <div className="container mx-auto p-4">
@@ -161,10 +194,34 @@ export default function Analysis() {
           <CardTitle>Analysis Results</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex justify-between mb-4">
+            <div className="flex gap-2">
+              <Button onClick={expandAll} variant="outline" size="sm">
+                Expand All
+              </Button>
+              <Button onClick={collapseAll} variant="outline" size="sm">
+                Collapse All
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={showOnlyAtRisk}
+                onCheckedChange={setShowOnlyAtRisk}
+              />
+              <Label htmlFor="show-at-risk">Show only at-risk items</Label>
+            </div>
+          </div>
+
           <TreeTable
-            value={treeData}
+            ref={treeTableRef}
+            value={displayData}
+            expandedKeys={expandedKeys}
+            onToggle={(e) => setExpandedKeys(e.value)}
             className="w-full"
             tableStyle={{ tableLayout: 'auto' }}
+            rowClassName={(node: TreeNode) => ({
+              'bg-red-50': isAtRisk(node),
+            })}
           >
             <Column
               field="name"
@@ -180,8 +237,8 @@ export default function Analysis() {
               headerClassName="border border-gray-200 bg-gray-50"
             />
             <Column
-              field="unit"
-              header="Unit"
+              field="units"
+              header="Units"
               bodyClassName="border border-gray-200"
               headerClassName="border border-gray-200 bg-gray-50"
             />
