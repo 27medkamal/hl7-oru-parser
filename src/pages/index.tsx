@@ -75,7 +75,8 @@ export default function Home() {
     setIsAnalysing(true);
 
     try {
-      await analyse.mutateAsync({ oruFileContent: fileContent });
+      const data = await analyse.mutateAsync({ oruFileContent: fileContent });
+      console.log(data);
     } catch (error) {
       toast({
         title: 'Error',
