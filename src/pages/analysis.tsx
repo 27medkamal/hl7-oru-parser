@@ -83,6 +83,8 @@ export default function Analysis() {
 
   const collapseAll = () => setExpandedKeys({});
 
+  // There is a bit of repetition in the code
+  // If this page grows, refactor out to different components
   return (
     <div className="container mx-auto p-4">
       <Card className="mb-6">
