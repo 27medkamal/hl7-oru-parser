@@ -26,7 +26,7 @@ const splitBy = (delimiter: string) => (val: string) =>
 
 const parseFloatOrUndefined = (val: string) => {
   const parsedValue = parseFloat(val);
-  if (!isNaN(parsedValue)) return parsedValue;
+  if (!isNaN(parsedValue) && parsedValue !== 0) return parsedValue;
 };
 
 const metricSchema = z.object({
@@ -68,26 +68,26 @@ const conditionSchema = z.object({
       condition.diagnosticMetrics.includes(metric.name),
     );
 
-    const dbGroups = await Promise.all(
-      metric.diagnosticGroups.map(
-        async (group) =>
-          await prisma.group.upsert({
-            where: { name: group },
-            create: { name: group },
-            update: {},
-          }),
-      ),
-    );
+    const dbDiagnostic = await (async () => {
+      if (!metric.diagnostic) return;
 
-    const dbDiagnostic = metric.diagnostic
-      ? await prisma.diagnostic.upsert({
+      const dbDiagnostic = await prisma.diagnostic.upsert({
         where: { name: metric.diagnostic },
         create: { name: metric.diagnostic },
         update: {},
-      })
-      : undefined;
+      });
 
-    if (dbDiagnostic)
+      const dbGroups = await Promise.all(
+        metric.diagnosticGroups.map(
+          async (group) =>
+            await prisma.group.upsert({
+              where: { name: group },
+              create: { name: group },
+              update: {},
+            }),
+        ),
+      );
+
       for (const dbGroup of dbGroups) {
         await prisma.diagnosticGroup.upsert({
           where: {
@@ -103,13 +103,15 @@ const conditionSchema = z.object({
           update: {},
         });
       }
+      return dbDiagnostic;
+    })();
 
     const dbCondition = condition
       ? await prisma.condition.upsert({
-        where: { name: condition.name },
-        create: { name: condition.name },
-        update: {},
-      })
+          where: { name: condition.name },
+          create: { name: condition.name },
+          update: {},
+        })
       : undefined;
 
     await prisma.metric.upsert({

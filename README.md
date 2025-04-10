@@ -42,6 +42,8 @@ SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike
 - min_age of 0 and max_age of 200 means they were not specified
 - Not all metrics have a `condition` associated with them.
 - Although the instructions specify that you should match on metric age range, gender oru_sonic_units and oru_sonic_codes, there only exists one metric with a `condition` associated with it.
+- Assuming min_age, max_age, everlab_lower, everlab_higher, standard_lower and standard_higher are all inclusive
+- Assuming if stardard_lower or everlab_lower is null or 0, that there is no lower limit
 
 ##### DB Graph
 
