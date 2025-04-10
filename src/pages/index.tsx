@@ -12,12 +12,15 @@ import {
 import { useToast } from '~/hooks/use-toast';
 import { Upload, File } from 'lucide-react';
 import { cn } from '~/lib/utils';
+import { trpc } from '~/utils/trpc';
 
 export default function Home() {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const { toast } = useToast();
+
+  const analayse = trpc.analyse.useMutation();
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];

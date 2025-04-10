@@ -1,13 +1,22 @@
 /**
  * This file contains the root router of your tRPC-backend
  */
+import { z } from 'zod';
 import { createCallerFactory, publicProcedure, router } from '../trpc';
-import { postRouter } from './post';
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => 'yay!'),
 
-  post: postRouter,
+  analyse: publicProcedure
+    .input(
+      z.object({
+        oruFileContent: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      console.log('oruFileContent', input.oruFileContent);
+      return 'yay!';
+    }),
 });
 
 export const createCaller = createCallerFactory(appRouter);
