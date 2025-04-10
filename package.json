@@ -42,7 +42,6 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "hl7-date": "^1.0.1",
-    "hl7-dictionary": "^1.0.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.487.0",
     "neat-csv": "^7.0.0",
