@@ -21,14 +21,37 @@ export default function Home() {
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file) {
+      toast({
+        title: 'Error',
+        description: 'No file selected',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setFileName(file.name);
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (!event.target?.result) return;
-      const content = event.target.result as string;
+      if (!event.target?.result) {
+        toast({
+          title: 'Error',
+          description: 'Failed to read file content',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const content = event.target.result;
+      if (typeof content !== 'string') {
+        toast({
+          title: 'Error',
+          description: 'Invalid file content',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setFileContent(content);
     };
     reader.readAsText(file);
@@ -36,9 +59,7 @@ export default function Home() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'text/plain': ['.oru.txt'],
-    },
+    accept: { 'text/plain': ['.oru.txt'] },
     multiple: false,
   });
 
@@ -55,25 +76,7 @@ export default function Home() {
     setIsAnalysing(true);
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: fileContent,
-          fileName: fileName || 'unnamed.txt',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'File content uploaded successfully',
-      });
+      // TODO: upload to trpc then navigate
     } catch (error) {
       toast({
         title: 'Error',
@@ -83,7 +86,6 @@ export default function Home() {
             : 'Failed to upload file content',
         variant: 'destructive',
       });
-    } finally {
       setIsAnalysing(false);
     }
   };
@@ -107,18 +109,16 @@ export default function Home() {
           >
             <input {...getInputProps()} />
             <Upload className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm font-medium text-center">
+            <p className="text-sm font-medium">
               Drag and drop your file here, or click to browse
             </p>
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground">
               Supports HL7/ORU text files
             </p>
             {fileName && (
               <div className="flex items-center gap-2 mt-2 p-2 bg-muted rounded-md w-full">
                 <File className="h-4 w-4" />
-                <span className="text-xs truncate max-w-[200px]">
-                  {fileName}
-                </span>
+                <span className="text-xs truncate">{fileName}</span>
               </div>
             )}
           </div>
