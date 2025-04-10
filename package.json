@@ -48,6 +48,7 @@
     "lucide-react": "^0.487.0",
     "neat-csv": "^7.0.0",
     "next": "^15.1.7",
+    "primereact": "^10.9.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
