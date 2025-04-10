@@ -11,7 +11,7 @@ import {
 } from '~/components/ui/card';
 import { useToast } from '~/hooks/use-toast';
 import { Upload, File } from 'lucide-react';
-import { cn } from '~/lib/utils'; // assuming you have the cn utility from shadcn
+import { cn } from '~/lib/utils';
 
 export default function Home() {
   const [fileContent, setFileContent] = useState<string | null>(null);
@@ -21,36 +21,32 @@ export default function Home() {
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (!file) {
-      toast({
+    if (!file)
+      return toast({
         title: 'Error',
         description: 'No file selected',
         variant: 'destructive',
       });
-      return;
-    }
 
     setFileName(file.name);
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (!event.target?.result) {
-        toast({
+      if (!event.target?.result)
+        return toast({
           title: 'Error',
           description: 'Failed to read file content',
           variant: 'destructive',
         });
-        return;
-      }
+
       const content = event.target.result;
-      if (typeof content !== 'string') {
-        toast({
+
+      if (typeof content !== 'string')
+        return toast({
           title: 'Error',
           description: 'Invalid file content',
           variant: 'destructive',
         });
-        return;
-      }
 
       setFileContent(content);
     };
@@ -91,11 +87,13 @@ export default function Home() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className="flex flex-col justify-center items-center min-h-screen">
       <Card>
-        <CardHeader>
-          <CardTitle>Upload file</CardTitle>
-          <CardDescription>Supported format: HL7/ORU</CardDescription>
+        <CardHeader className="flex flex-col items-center justify-center">
+          <CardTitle>HL7/ORU Analyser</CardTitle>
+          <CardDescription>
+            Upload your file to start the analysis
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div
