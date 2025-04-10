@@ -19,13 +19,22 @@ SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike
 - `diagnostic` and `group` have an m2m relationship
 - `metric` has 1 `diagnostic` and therefore it is a 1:m relationship
 - Can a `metric` have multiple conditions? As per the following, no. Therefore it's a 1:m relationship
-  ````sql
+  ```sql
   WITH all_pairs AS (SELECT name, TRIM(unnested.value) AS metric FROM read_csv_auto('prisma/data/conditions.csv'), UNNEST(string_split(diagnostic_metrics, ',')) AS unnested(value)) SELECT metric, COUNT(DISTINCT name) AS condition_count, LIST(name) AS conditions FROM all_pairs GROUP BY metric ORDER BY condition_count DESC;
-  ````
+  ```
 - `conditions.csv` doesn't specify whether the condition is present if the metric value is above the maximum, or below the minimum. I will assume that the condition is present either way
 - Possible issues (won't investigate, but should investigate in a production setting):
   - There is duplication of relationships which might introduce inconsistencies. Example: `diagnostic_groups.csv` has a `diagnostics` column. `diagnostics.csv` also has a `diagnostic_groups` column. There are many more examples of this. For this exercise, wherever there are multiple ways to traverse a relationship, I will choose one and ignore the rest. In a production setting though, data integrity should be ensured before loading such files.
+- The `diagnostics.csv` file should have all the data that `diagnostic_groups.csv` and `diagnostics.csv` have:
+  - It contains the `diagnostic_groups` and `diagnostic` columns with which you could derive the mapping between `diagnostic`, `group` and `metric`
+  - This is <mark>ASSUMING</mark> perfect data integrity between the files. This should be verified in a production setting.
+  - This is also due to the fact that the ORU file refers to metrics, therefore if there exists a group or diagnostic that doesn't have a metric, it is not relevant to the ORU file. Therefore, it is safe to ignore
+  - From the above, it then follows that you need to only load `diagnostic_metrics.csv` and `conditions.csv` files, leading to:
+    1. A simpler implementation
+    1. Stronger data integrity guarantees
 - assuming `group`, `diagnostic` and `condition` have unique names across the board
+- min_age of 0 and max_age of 200 means they were not specified
+- Not all metrics have a `condition` associated with them.
 - TODO: db graph
 
 ## Features
