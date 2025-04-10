@@ -13,12 +13,17 @@ import { useToast } from '~/hooks/use-toast';
 import { Upload, File } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { trpc } from '~/utils/trpc';
+import { useAnalysis } from '~/lib/contexts';
+import { useRouter } from 'next/router';
 
 export default function Home() {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const { toast } = useToast();
+  const { setAnalysis } = useAnalysis();
+
+  const router = useRouter();
 
   const analyse = trpc.analyse.useMutation();
 
@@ -75,8 +80,11 @@ export default function Home() {
     setIsAnalysing(true);
 
     try {
-      const data = await analyse.mutateAsync({ oruFileContent: fileContent });
-      console.log(data);
+      const analysis = await analyse.mutateAsync({
+        oruFileContent: fileContent,
+      });
+      setAnalysis(analysis);
+      router.push('/analysis');
     } catch (error) {
       toast({
         title: 'Error',
