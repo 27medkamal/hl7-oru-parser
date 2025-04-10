@@ -2,7 +2,8 @@
 
 ## TODO:
 
-- [ ] polish this file
+- [ ] Polish this file
+- [ ] Add tests
 
 ## Data Diagnosis:
 
