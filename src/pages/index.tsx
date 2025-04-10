@@ -20,7 +20,7 @@ export default function Home() {
   const [isAnalysing, setIsAnalysing] = useState(false);
   const { toast } = useToast();
 
-  const analayse = trpc.analyse.useMutation();
+  const analyse = trpc.analyse.useMutation();
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -75,7 +75,7 @@ export default function Home() {
     setIsAnalysing(true);
 
     try {
-      // TODO: upload to trpc then navigate
+      await analyse.mutateAsync({ oruFileContent: fileContent });
     } catch (error) {
       toast({
         title: 'Error',
