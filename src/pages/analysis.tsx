@@ -1,65 +1,27 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { TreeTable } from 'primereact/treetable';
 import { Column } from 'primereact/column';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
 import { Switch } from '~/components/ui/switch';
 import { Label } from '~/components/ui/label';
-import { useAnalysis } from '~/lib/contexts';
+import { type Analysis, useAnalysis } from '~/lib/contexts';
 import _ from 'lodash';
 import { cn } from '~/lib/utils';
 
 type TreeNode = {
   key: string;
-  data: {
-    name: string;
-    value: string;
-    units: string;
-    standardRange: string;
-    everlabRange: string;
-    standardAtRisk: {
-      text: string;
-      classification: 'Yes' | 'No' | 'Possible' | '';
-    };
-    everlabAtRisk: {
-      text: string;
-      classification: 'Yes' | 'No' | 'Possible' | '';
-    };
-  };
+  data: Pick<
+    Analysis['data'][number][number][number],
+    | 'name'
+    | 'result'
+    | 'units'
+    | 'standardRange'
+    | 'everlabRange'
+    | 'standardAtRisk'
+    | 'everlabAtRisk'
+  >;
   children?: TreeNode[];
-};
-
-const formatRange = (lowerLimit: number | null, higherLimit: number | null) => {
-  if (!lowerLimit && higherLimit) return `< ${higherLimit}`;
-  if (lowerLimit && !higherLimit) return `> ${lowerLimit}`;
-  if (lowerLimit && higherLimit) return `${lowerLimit} - ${higherLimit}`;
-  return '';
-};
-
-const formatAtRisk = (
-  atRisk: 'Yes' | 'No' | 'Possible',
-  conditionName: string | null,
-): {
-  text: string;
-  classification: 'Yes' | 'No' | 'Possible' | '';
-} => {
-  if (atRisk === 'Yes') {
-    return {
-      text: conditionName ? conditionName : 'At risk',
-      classification: 'Yes',
-    };
-  } else if (atRisk === 'No') {
-    return { text: 'No risk', classification: 'No' };
-  } else if (atRisk === 'Possible') {
-    return {
-      text: conditionName
-        ? `Possible risk for ${conditionName}`
-        : 'Possible risk',
-      classification: 'Possible',
-    };
-  } else {
-    return { text: '', classification: '' };
-  }
 };
 
 const isAtRisk = (node: TreeNode): boolean =>
@@ -80,58 +42,26 @@ export default function Analysis() {
   const { analysis } = useAnalysis();
   const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState({});
-  const treeTableRef = useRef(null);
 
   if (!analysis)
     return <div className="text-center">Error. No analysis found</div>;
 
-  // TODO: coordinate with backend to get the correct data structure
+  const emptyRow = {
+    result: '',
+    units: '',
+    standardRange: '',
+    everlabRange: '',
+    standardAtRisk: { text: '', classification: '' },
+    everlabAtRisk: { text: '', classification: '' },
+  } as const;
+
   const treeData: TreeNode[] = _.map(analysis.data, (groups, groupName) => ({
     key: groupName,
-    data: {
-      name: groupName,
-      value: '',
-      units: '',
-      standardRange: '',
-      everlabRange: '',
-      standardAtRisk: { text: '', classification: '' },
-      everlabAtRisk: { text: '', classification: '' },
-    },
+    data: { name: groupName, ...emptyRow },
     children: _.map(groups, (metrics, diagnosticName) => ({
       key: diagnosticName,
-      data: {
-        name: diagnosticName,
-        value: '',
-        units: '',
-        standardRange: '',
-        everlabRange: '',
-        standardAtRisk: { text: '', classification: '' },
-        everlabAtRisk: { text: '', classification: '' },
-      },
-      children: metrics.map((metric) => ({
-        key: metric.metricName,
-        data: {
-          name: metric.metricName,
-          value: metric.resultValue,
-          units: metric.metricUnits,
-          standardRange: formatRange(
-            metric.metricStandardLower,
-            metric.metricStandardHigher,
-          ),
-          everlabRange: formatRange(
-            metric.metricEverlabLower,
-            metric.metricEverlabHigher,
-          ),
-          standardAtRisk: formatAtRisk(
-            metric.standardAtRisk,
-            metric.conditionName,
-          ),
-          everlabAtRisk: formatAtRisk(
-            metric.everlabAtRisk,
-            metric.conditionName,
-          ),
-        },
-      })),
+      data: { name: diagnosticName, ...emptyRow },
+      children: metrics.map((metric) => ({ key: metric.name, data: metric })),
     })),
   }));
 
@@ -164,25 +94,25 @@ export default function Analysis() {
             <div>
               <p className="text-sm text-gray-500">First Name</p>
               <p className="font-medium">
-                {analysis?.personalDetails?.firstName || 'N/A'}
+                {analysis.personalDetails.firstName || 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Last Name</p>
               <p className="font-medium">
-                {analysis?.personalDetails?.lastName || 'N/A'}
+                {analysis.personalDetails.lastName || 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Age</p>
               <p className="font-medium">
-                {analysis?.personalDetails?.age || 'N/A'}
+                {analysis.personalDetails.age || 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Gender</p>
               <p className="font-medium">
-                {analysis?.personalDetails?.gender || 'N/A'}
+                {analysis.personalDetails.gender || 'N/A'}
               </p>
             </div>
           </div>
@@ -213,7 +143,6 @@ export default function Analysis() {
           </div>
 
           <TreeTable
-            ref={treeTableRef}
             value={displayData}
             expandedKeys={expandedKeys}
             onToggle={(e) => setExpandedKeys(e.value)}
@@ -231,8 +160,8 @@ export default function Analysis() {
               headerClassName="border border-gray-200 bg-gray-50"
             />
             <Column
-              field="value"
-              header="Value"
+              field="result"
+              header="Result"
               bodyClassName="border border-gray-200"
               headerClassName="border border-gray-200 bg-gray-50"
             />

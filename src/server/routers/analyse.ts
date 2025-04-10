@@ -16,8 +16,6 @@ import {
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
 
-// TODO: add tests
-
 export const analyseRoute = publicProcedure
   .input(z.object({ oruFileContent: z.string() }))
   .mutation(async ({ input: { oruFileContent } }) => {
@@ -44,7 +42,6 @@ export const analyseRoute = publicProcedure
       .mapValues((metrics) => _.groupBy(metrics, 'diagnosticName'))
       .value();
 
-    console.log(JSON.stringify({ data, personalDetails }, null, 2));
     return { data, personalDetails };
   });
 
@@ -189,25 +186,63 @@ const processResults = (
       throw new Error('atRisk should handle all cases');
     };
 
+    const formatAtRisk = (
+      atRisk: 'Yes' | 'No' | 'Possible',
+      conditionName: string | undefined,
+    ): {
+      text: string;
+      classification: 'Yes' | 'No' | 'Possible' | '';
+    } => {
+      if (atRisk === 'Yes') {
+        return {
+          text: conditionName ? conditionName : 'At risk',
+          classification: 'Yes',
+        };
+      } else if (atRisk === 'No') {
+        return { text: 'No risk', classification: 'No' };
+      } else if (atRisk === 'Possible') {
+        return {
+          text: conditionName
+            ? `Possible risk for ${conditionName}`
+            : 'Possible risk',
+          classification: 'Possible',
+        };
+      }
+      return { text: '', classification: '' };
+    };
+
+    const formatRange = (
+      lowerLimit: number | null,
+      higherLimit: number | null,
+    ) => {
+      if (!lowerLimit && higherLimit) return `< ${higherLimit}`;
+      if (lowerLimit && !higherLimit) return `> ${lowerLimit}`;
+      if (lowerLimit && higherLimit) return `${lowerLimit} - ${higherLimit}`;
+      return '';
+    };
+
     return {
-      metricName: metric.name,
-      metricUnits: metric.units.join(', '),
-      metricStandardLower: metric.standardLower,
-      metricStandardHigher: metric.standardHigher,
-      metricEverlabLower: metric.everlabLower,
-      metricEverlabHigher: metric.everlabHigher,
-      conditionName: metric.condition?.name ?? null,
+      name: metric.name,
+      result:
+        result.result.type === 'NM'
+          ? `${result.result.value}`
+          : `${result.result.operater} ${result.result.value}`,
+      units: metric.units.join(', '),
+      standardRange: formatRange(metric.standardLower, metric.standardHigher),
+      everlabRange: formatRange(metric.everlabLower, metric.everlabHigher),
+      standardAtRisk: formatAtRisk(
+        atRisk(metric.standardLower, metric.standardHigher),
+        metric.condition?.name,
+      ),
+      everlabAtRisk: formatAtRisk(
+        atRisk(metric.everlabLower, metric.everlabHigher),
+        metric.condition?.name,
+      ),
       diagnosticName: metric.diagnostic?.name ?? null,
       groupNames:
         metric.diagnostic?.diagnosticGroups.map(
           (diagnosticGroup) => diagnosticGroup.group.name,
         ) ?? [],
-      resultValue:
-        result.result.type === 'NM'
-          ? `${result.result.value}`
-          : `${result.result.operater} ${result.result.value}`,
-      standardAtRisk: atRisk(metric.standardLower, metric.standardHigher),
-      everlabAtRisk: atRisk(metric.everlabLower, metric.everlabHigher),
     };
   });
 };
