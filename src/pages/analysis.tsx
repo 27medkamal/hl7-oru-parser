@@ -3,14 +3,15 @@ import { TreeTable } from 'primereact/treetable';
 import { Column } from 'primereact/column';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 
-import { Analysis as AnalysisT, useAnalysis } from '~/lib/contexts';
+import { useAnalysis } from '~/lib/contexts';
+import _ from 'lodash';
 
 type TreeNode = {
   key: string;
   data: {
     name: string;
     value: string | number;
-    units: string;
+    unit: string;
     standardRange: string;
     status: string;
   };
@@ -23,107 +24,43 @@ export default function Analysis() {
   if (!analysis)
     return <div className="text-center">Error. No analysis found</div>;
 
-  const transformAnalysisData = (analysisObj: AnalysisT): TreeNode[] => {
-    const { data } = analysisObj;
-
-    const groupedByGroupName: Record<string, any[]> = {};
-
-    // Iterate through the outer object keys which are group names
-    Object.keys(data).forEach((groupName) => {
-      const diagnosticsInGroup = data[groupName];
-
-      // Iterate through each diagnostic name in this group
-      Object.keys(diagnosticsInGroup).forEach((diagnosticName) => {
-        // Get the metrics for this diagnostic
-        const metrics = diagnosticsInGroup[diagnosticName];
-
-        // Initialize this group if not already done
-        if (!groupedByGroupName[groupName]) {
-          groupedByGroupName[groupName] = [];
-        }
-
-        // Add each metric to the appropriate group, along with its diagnostic name
-        metrics.forEach((metric) => {
-          groupedByGroupName[groupName].push({
-            ...metric,
-            diagnosticKey: diagnosticName,
-          });
-        });
-      });
-    });
-
-    // Step 2: Transform into tree structure
-    const result: TreeNode[] = [];
-
-    // Create group nodes (Level 1: groupName)
-    Object.keys(groupedByGroupName).forEach((groupName, groupIdx) => {
-      // Group by diagnostic key within each group
-      const groupMetrics = groupedByGroupName[groupName];
-      const diagnosticGroups: Record<string, any[]> = {};
-
-      groupMetrics.forEach((metric) => {
-        if (!diagnosticGroups[metric.diagnosticKey]) {
-          diagnosticGroups[metric.diagnosticKey] = [];
-        }
-        diagnosticGroups[metric.diagnosticKey].push(metric);
-      });
-
-      // Create diagnostic nodes (Level 2: diagnosticname)
-      const diagnosticNodes: TreeNode[] = [];
-
-      Object.keys(diagnosticGroups).forEach((diagnosticKey, diagIdx) => {
-        const metrics = diagnosticGroups[diagnosticKey];
-
-        // Create metric nodes (Level 3: metric)
-        const metricNodes: TreeNode[] = metrics.map((metric, metricIdx) => ({
-          key: `${groupIdx}-${diagIdx}-${metricIdx}`,
-          data: {
-            name: metric.metricName,
-            value: metric.metricValue,
-            units: metric.metricUnits,
-            standardRange:
-              metric.metricStandardLower !== null &&
-              metric.metricStandardHigher !== null
-                ? `${metric.metricStandardLower} - ${metric.metricStandardHigher}`
-                : 'N/A',
-            status: metric.everlabAtRisk,
-          },
-        }));
-
-        diagnosticNodes.push({
-          key: `${groupIdx}-${diagIdx}`,
-          data: {
-            name: diagnosticKey,
-            value: '',
-            units: '',
-            standardRange: '',
-            status: '',
-          },
-          children: metricNodes,
-        });
-      });
-
-      result.push({
-        key: `${groupIdx}`,
+  const treeData: TreeNode[] = _.map(analysis.data, (groups, groupName) => ({
+    key: groupName,
+    data: {
+      name: groupName,
+      value: '',
+      unit: '',
+      standardRange: '',
+      status: '',
+    },
+    children: _.map(groups, (metrics, diagnosticName) => ({
+      key: diagnosticName,
+      data: {
+        name: diagnosticName,
+        value: '',
+        unit: '',
+        standardRange: '',
+        status: '',
+      },
+      children: metrics.map((metric) => ({
+        key: metric.metricName,
         data: {
-          name: groupName,
-          value: '',
-          units: '',
-          standardRange: '',
-          status: '',
+          name: metric.metricName,
+          value: metric.resultValue,
+          unit: metric.metricUnit,
+          standardRange:
+            metric.metricStandardLower !== null &&
+            metric.metricStandardHigher !== null
+              ? `${metric.metricStandardLower} - ${metric.metricStandardHigher}`
+              : 'N/A',
+          status: metric.everlabAtRisk,
         },
-        children: diagnosticNodes,
-      });
-    });
-
-    return result;
-  };
-
-  const treeData = transformAnalysisData(analysis);
+      })),
+    })),
+  }));
 
   return (
     <div className="container mx-auto p-4">
-      {/* Personal Details Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Personal Details</CardTitle>
@@ -158,7 +95,6 @@ export default function Analysis() {
         </CardContent>
       </Card>
 
-      {/* Analysis Data TreeTable */}
       <Card>
         <CardHeader>
           <CardTitle>Analysis Results</CardTitle>

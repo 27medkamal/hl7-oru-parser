@@ -191,7 +191,7 @@ const processResults = (
 
     return {
       metricName: metric.name,
-      metricUnits: metric.units[0] ?? '',
+      metricUnit: metric.units[0] ?? '',
       metricStandardLower: metric.standardLower,
       metricStandardHigher: metric.standardHigher,
       metricEverlabLower: metric.everlabLower,

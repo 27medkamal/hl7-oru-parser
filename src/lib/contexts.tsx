@@ -2,7 +2,7 @@ import { inferRouterOutputs } from '@trpc/server';
 import { createContext, useState, useContext, ReactNode } from 'react';
 import { AppRouter } from '~/server/routers/_app';
 
-export type Analysis = inferRouterOutputs<AppRouter>['analyse'];
+type Analysis = inferRouterOutputs<AppRouter>['analyse'];
 
 type AnalysisContext = {
   analysis: Analysis | undefined;
