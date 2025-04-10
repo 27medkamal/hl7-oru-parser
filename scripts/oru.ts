@@ -187,7 +187,8 @@ const prisma = new PrismaClient();
       })),
     )
     .groupBy('groupName')
-    .mapValues((metrics) => _(metrics).groupBy('diagnosticName'))
+    .mapValues((metrics) => _.groupBy(metrics, 'diagnosticName'))
     .value();
+
   console.log(JSON.stringify(tmp, null, 2));
 })();
