@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 datasource db {
   provider = "postgres"
   url      = env("DATABASE_URL")
@@ -10,14 +7,79 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Post {
-  id    String @id @default(uuid())
-  title String
-  text  String
-
-  // To return `Date`s intact through the API we use transformers
-  // https://trpc.io/docs/v11/data-transformers
-  // This is unique so it can be used for cursor-based pagination
+model Group {
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  name             String            @unique
+  diagnosticGroups DiagnosticGroup[]
+}
+
+model Diagnostic {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  name String @unique
+
+  diagnosticGroups DiagnosticGroup[]
+  metrics          Metric[]
+}
+
+// m2m between daiagnostic and group
+model DiagnosticGroup {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  diagnosticId String
+  diagnostic   Diagnostic @relation(fields: [diagnosticId], references: [id])
+
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id])
+
+  @@unique([diagnosticId, groupId], name: "uniqueDiagnosticGroup")
+}
+
+model Condition {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  name String @unique
+
+  metric Metric[]
+}
+
+model Metric {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  name           String
+  oruSonicCodes  String[]
+  oruSonicUnits  String[]
+  units          String[]
+  minAge         Int?
+  maxAge         Int?
+  gender         Gender
+  standardLower  Float?
+  standardHigher Float?
+  everlabLower   Float?
+  everlabHigher  Float?
+
+  conditionId String?
+  condition   Condition? @relation(fields: [conditionId], references: [id])
+
+  diagnosticId String?
+  diagnostic   Diagnostic? @relation(fields: [diagnosticId], references: [id])
+
+  @@unique([name, oruSonicCodes, oruSonicUnits], name: "uniqueNameOruSonicCodesOruSonicUnits")
+}
+
+enum Gender {
+  Male
+  Female
+  Any
 }
