@@ -10,6 +10,16 @@ pnpm dev
 pnpm test-unit # run unit tests
 ```
 
+## Starting points for review:
+
+- Backend:
+  - DB Schema: `prisma/schema.prisma`
+  - Seed csv files: `prisma/seed.ts`
+  - API endpoint: `src/server/routers/analyse.ts`
+- Frontend:
+  - Home page/Upload page: `src/pages/index.tsx`
+  - Analysis page: `src/pages/analysis.tsx`
+
 ## Data Diagnosis:
 
 - Some of the queries run:
