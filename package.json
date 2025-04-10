@@ -42,6 +42,8 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "hl7-date": "^1.0.1",
+    "hl7-dictionary": "^1.0.1",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.487.0",
     "neat-csv": "^7.0.0",
     "next": "^15.1.7",
@@ -55,6 +57,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.50.1",
+    "@types/lodash": "^4.17.16",
     "@types/node": "^22.13.5",
     "@types/react": "^19.1.0",
     "autoprefixer": "^10.4.7",

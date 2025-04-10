@@ -41,6 +41,12 @@ importers:
       hl7-date:
         specifier: ^1.0.1
         version: 1.0.1
+      hl7-dictionary:
+        specifier: ^1.0.1
+        version: 1.0.1
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       lucide-react:
         specifier: ^0.487.0
         version: 0.487.0(react@19.1.0)
@@ -75,6 +81,9 @@ importers:
       '@playwright/test':
         specifier: ^1.50.1
         version: 1.51.1
+      '@types/lodash':
+        specifier: ^4.17.16
+        version: 4.17.16
       '@types/node':
         specifier: ^22.13.5
         version: 22.14.0
@@ -782,6 +791,9 @@ packages:
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
+
+  '@types/lodash@4.17.16':
+    resolution: {integrity: sha512-HX7Em5NYQAXKW+1T+FiuG27NGwzJfCX3s1GjOa7ujxZa52kjJLOr4FUxT+giF6Tgxv1e+/czV/iTtBw27WTU9g==}
 
   '@types/node@22.14.0':
     resolution: {integrity: sha512-Kmpl+z84ILoG+3T/zQFyAJsU6EPTmOCj8/2+83fSN6djd6I4o7uOuGIH6vq3PrjY5BGitSbFuMN18j3iknubbA==}
@@ -1673,6 +1685,9 @@ packages:
 
   hl7-date@1.0.1:
     resolution: {integrity: sha512-WjcFwEVF9Ivd8q1VPWtx0HMeM5NIaAT4Tit9lv7tLgW+jeZHbi7EMsm0Ybf4cep5ad/0gaa/Aw5rV0Myu5+EaQ==}
+
+  hl7-dictionary@1.0.1:
+    resolution: {integrity: sha512-fS56mbNeZUqprk+WUSx7kpLXG3GDZV9PWryz5Qd4WtSarquQIOlIqhVB1gvLz/+TOjziwhodu0HTtzI4/Jjj3A==}
 
   hosted-git-info@2.8.9:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
@@ -3287,6 +3302,8 @@ snapshots:
 
   '@types/json5@0.0.29': {}
 
+  '@types/lodash@4.17.16': {}
+
   '@types/node@22.14.0':
     dependencies:
       undici-types: 6.21.0
@@ -4382,6 +4399,8 @@ snapshots:
       function-bind: 1.1.2
 
   hl7-date@1.0.1: {}
+
+  hl7-dictionary@1.0.1: {}
 
   hosted-git-info@2.8.9: {}
 

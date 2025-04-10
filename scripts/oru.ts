@@ -1,5 +1,6 @@
 // @ts-expect-error: No types - will add later
 import hl7 from 'tiny-hl7';
+import _ from 'lodash';
 // @ts-expect-error: No types - will add later
 import HL7Date from 'hl7-date';
 import { differenceInYears } from 'date-fns';
@@ -7,6 +8,7 @@ import * as fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 
 // TODO: add tests here
+// TODO: refactor this
 
 const parsedMessages = hl7.parse(
   fs.readFileSync('prisma/data/MP826520.oru.txt').toString(),
@@ -68,6 +70,7 @@ const results = parsedMessages
   );
 
 const prisma = new PrismaClient();
+
 (async () => {
   // This is a short list, so should be safe to load it all into memory
   const metrics = await prisma.metric.findMany({
@@ -79,7 +82,7 @@ const prisma = new PrismaClient();
     },
   });
 
-  const tmp = results
+  const tmp = _.chain(results)
     .reduce<
       { result: (typeof results)[number]; metric: (typeof metrics)[number] }[]
     >((acc, result) => {
@@ -155,14 +158,14 @@ const prisma = new PrismaClient();
 
       return {
         metricName: metric.name,
-        metricUnits: metric.units,
+        metricUnits: metric.units[0] ?? '',
         metricStandardLower: metric.standardLower,
         metricStandardHigher: metric.standardHigher,
         metricEverlabLower: metric.everlabLower,
         metricEverlabHigher: metric.everlabHigher,
 
-        conditionName: metric.condition?.name,
-        diagnosticName: metric.diagnostic?.name,
+        conditionName: metric.condition?.name ?? null,
+        diagnosticName: metric.diagnostic?.name ?? null,
         groupNames:
           metric.diagnostic?.diagnosticGroups.map(
             (diagnosticGroup) => diagnosticGroup.group.name,
@@ -175,6 +178,16 @@ const prisma = new PrismaClient();
         standardAtRisk: atRisk(metric.standardLower, metric.standardHigher),
         everlabAtRisk: atRisk(metric.everlabLower, metric.everlabHigher),
       };
-    });
+    })
+    .flatMap((result) =>
+      result.groupNames.map((groupName) => ({
+        ...result,
+        groupNames: undefined,
+        groupName,
+      })),
+    )
+    .groupBy('groupName')
+    .mapValues((metrics) => _(metrics).groupBy('diagnosticName'))
+    .value();
   console.log(JSON.stringify(tmp, null, 2));
 })();
