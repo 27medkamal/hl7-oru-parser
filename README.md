@@ -12,7 +12,7 @@ pnpm test-unit # run unit tests
 
 ## Data Diagnosis:
 
-- Queries run:
+- Some of the queries run:
 
   ```sql
   SELECT name, COUNT(*) AS count
