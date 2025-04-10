@@ -6,11 +6,9 @@
 docker-compose up -d
 pnpm install
 pnpm dev
+
+pnpm test-unit # run unit tests
 ```
-
-## TODO:
-
-- [ ] Add tests
 
 ## Data Diagnosis:
 
