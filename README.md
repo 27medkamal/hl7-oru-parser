@@ -35,7 +35,10 @@ SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike
 - assuming `group`, `diagnostic` and `condition` have unique names across the board
 - min_age of 0 and max_age of 200 means they were not specified
 - Not all metrics have a `condition` associated with them.
-- TODO: db graph
+
+### DB Graph
+
+![DB Graph](prisma/db-graph.png)
 
 ## Features
 
