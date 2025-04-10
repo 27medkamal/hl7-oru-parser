@@ -1,4 +1,20 @@
-# Prisma + tRPC
+# Everlab
+
+## Data Diagnosis:
+
+### Queries run
+
+```sql
+SELECT name, COUNT(*) AS count FROM './prisma/data/diagnostic_metrics.csv' GROUP BY name HAVING COUNT(*) > 1;
+SELECT * from './prisma/data/diagnostic_metrics.csv' where oru_sonic_units ilike '%;%';
+```
+
+### Analysis/Assumptions
+
+- `Total Serum IgA` is found as a duplicate. All fields are the same. Except `diagnostic` and `diagnostic_groups`, therefore need to give priority to metrics that have a `diagnostic` and `diagnostic_groups` field
+- All units in `oru_sonic_units` for each metric are equivalent to `units`
+- No metric has different units, but need to cater for the possibility
+- Will go ahead with the assumption that if new units are to be used, new records will be added to `diagnostic_metrics.csv` where the metric name will be the same but the units will be different
 
 ## Features
 
