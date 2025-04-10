@@ -1,186 +1,138 @@
-import { trpc } from '../utils/trpc';
-import type { NextPageWithLayout } from './_app';
-import type { inferProcedureInput } from '@trpc/server';
-import Link from 'next/link';
-import { Fragment } from 'react';
-import type { AppRouter } from '~/server/routers/_app';
+import { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button } from '~/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card';
+import { useToast } from '~/hooks/use-toast';
+import { Upload, File } from 'lucide-react';
+import { cn } from '~/lib/utils'; // assuming you have the cn utility from shadcn
 
-const IndexPage: NextPageWithLayout = () => {
-  const utils = trpc.useUtils();
-  const postsQuery = trpc.post.list.useInfiniteQuery(
-    {
-      limit: 5,
-    },
-    {
-      getNextPageParam(lastPage) {
-        return lastPage.nextCursor;
-      },
-    },
-  );
+export default function Home() {
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [isAnalysing, setIsAnalysing] = useState(false);
+  const { toast } = useToast();
 
-  const addPost = trpc.post.add.useMutation({
-    async onSuccess() {
-      // refetches posts after a post is added
-      await utils.post.list.invalidate();
+  const onDrop = (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    setFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      const content = event.target.result as string;
+      setFileContent(content);
+    };
+    reader.readAsText(file);
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/plain': ['.oru.txt'],
     },
+    multiple: false,
   });
 
-  // prefetch all posts for instant navigation
-  // useEffect(() => {
-  //   const allPosts = postsQuery.data?.pages.flatMap((page) => page.items) ?? [];
-  //   for (const { id } of allPosts) {
-  //     void utils.post.byId.prefetch({ id });
-  //   }
-  // }, [postsQuery.data, utils]);
+  const handleUpload = async () => {
+    if (!fileContent) {
+      toast({
+        title: 'Error',
+        description: 'Please select a file first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsAnalysing(true);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: fileContent,
+          fileName: fileName || 'unnamed.txt',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'File content uploaded successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to upload file content',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalysing(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col bg-gray-800 py-8">
-      <h1 className="text-4xl font-bold">
-        Welcome to your tRPC with Prisma starter!
-      </h1>
-      <p className="text-gray-400">
-        If you get stuck, check{' '}
-        <Link className="underline" href="https://trpc.io">
-          the docs
-        </Link>
-        , write a message in our{' '}
-        <Link className="underline" href="https://trpc.io/discord">
-          Discord-channel
-        </Link>
-        , or write a message in{' '}
-        <Link
-          className="underline"
-          href="https://github.com/trpc/trpc/discussions"
-        >
-          GitHub Discussions
-        </Link>
-        .
-      </p>
-
-      <div className="flex flex-col py-8 items-start gap-y-2">
-        <div className="flex flex-col"></div>
-        <h2 className="text-3xl font-semibold">
-          Latest Posts
-          {postsQuery.status === 'pending' && '(loading)'}
-        </h2>
-
-        <button
-          className="bg-gray-900 p-2 rounded-md font-semibold disabled:bg-gray-700 disabled:text-gray-400"
-          onClick={() => postsQuery.fetchNextPage()}
-          disabled={!postsQuery.hasNextPage || postsQuery.isFetchingNextPage}
-        >
-          {postsQuery.isFetchingNextPage
-            ? 'Loading more...'
-            : postsQuery.hasNextPage
-              ? 'Load More'
-              : 'Nothing more to load'}
-        </button>
-
-        {postsQuery.data?.pages.map((page, index) => (
-          <Fragment key={page.items[0]?.id || index}>
-            {page.items.map((item) => (
-              <article key={item.id}>
-                <h3 className="text-2xl font-semibold">{item.title}</h3>
-                <Link className="text-gray-400" href={`/post/${item.id}`}>
-                  View more
-                </Link>
-              </article>
-            ))}
-          </Fragment>
-        ))}
-      </div>
-
-      <hr />
-
-      <div className="flex flex-col py-8 items-center">
-        <h2 className="text-3xl font-semibold pb-2">Add a Post</h2>
-
-        <form
-          className="py-2 w-4/6"
-          onSubmit={async (e) => {
-            /**
-             * In a real app you probably don't want to use this manually
-             * Checkout React Hook Form - it works great with tRPC
-             * @see https://react-hook-form.com/
-             * @see https://kitchen-sink.trpc.io/react-hook-form
-             */
-            e.preventDefault();
-            const $form = e.currentTarget;
-            const values = Object.fromEntries(new FormData($form));
-            type Input = inferProcedureInput<AppRouter['post']['add']>;
-            //    ^?
-            const input: Input = {
-              title: values.title as string,
-              text: values.text as string,
-            };
-            try {
-              await addPost.mutateAsync(input);
-
-              $form.reset();
-            } catch (cause) {
-              console.error({ cause }, 'Failed to add post');
-            }
-          }}
-        >
-          <div className="flex flex-col gap-y-4 font-semibold">
-            <input
-              className="focus-visible:outline-dashed outline-offset-4 outline-2 outline-gray-700 rounded-xl px-4 py-3 bg-gray-900"
-              id="title"
-              name="title"
-              type="text"
-              placeholder="Title"
-              disabled={addPost.isPending}
-            />
-            <textarea
-              className="resize-none focus-visible:outline-dashed outline-offset-4 outline-2 outline-gray-700 rounded-xl px-4 py-3 bg-gray-900"
-              id="text"
-              name="text"
-              placeholder="Text"
-              disabled={addPost.isPending}
-              rows={6}
-            />
-
-            <div className="flex justify-center">
-              <input
-                className="cursor-pointer bg-gray-900 p-2 rounded-md px-16"
-                type="submit"
-                disabled={addPost.isPending}
-              />
-              {addPost.error && (
-                <p style={{ color: 'red' }}>{addPost.error.message}</p>
-              )}
-            </div>
+    <div className="flex justify-center items-center min-h-screen">
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload file</CardTitle>
+          <CardDescription>Supported format: HL7/ORU</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div
+            {...getRootProps()}
+            className={cn(
+              'border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2 cursor-pointer',
+              isDragActive
+                ? 'border-primary bg-primary/10'
+                : 'border-muted hover:border-primary hover:bg-primary/5',
+            )}
+          >
+            <input {...getInputProps()} />
+            <Upload className="h-10 w-10 text-muted-foreground" />
+            <p className="text-sm font-medium text-center">
+              Drag and drop your file here, or click to browse
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              Supports HL7/ORU text files
+            </p>
+            {fileName && (
+              <div className="flex items-center gap-2 mt-2 p-2 bg-muted rounded-md w-full">
+                <File className="h-4 w-4" />
+                <span className="text-xs truncate max-w-[200px]">
+                  {fileName}
+                </span>
+              </div>
+            )}
           </div>
-        </form>
-      </div>
+        </CardContent>
+        <CardFooter>
+          <Button
+            onClick={handleUpload}
+            disabled={!fileContent || isAnalysing}
+            className="w-full"
+          >
+            {isAnalysing ? 'Analysing...' : 'Analyse'}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
-};
-
-export default IndexPage;
-
-/**
- * If you want to statically render this page
- * - Export `appRouter` & `createContext` from [trpc].ts
- * - Make the `opts` object optional on `createContext()`
- *
- * @see https://trpc.io/docs/v11/ssg
- */
-// export const getStaticProps = async (
-//   context: GetStaticPropsContext<{ filter: string }>,
-// ) => {
-//   const ssg = createServerSideHelpers({
-//     router: appRouter,
-//     ctx: await createContext(),
-//   });
-//
-//   await ssg.post.all.fetch();
-//
-//   return {
-//     props: {
-//       trpcState: ssg.dehydrate(),
-//       filter: context.params?.filter ?? 'all',
-//     },
-//     revalidate: 1,
-//   };
-// };
+}

@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { Toaster } from '~/components/ui/toaster';
 import type { ReactNode } from 'react';
 
 type DefaultLayoutProps = { children: ReactNode };
@@ -12,6 +13,7 @@ export const DefaultLayout = ({ children }: DefaultLayoutProps) => {
       </Head>
 
       <main className="h-screen">{children}</main>
+      <Toaster />
     </>
   );
 };
